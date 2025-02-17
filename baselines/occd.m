@@ -1,7 +1,16 @@
-function [theta_occd, idx_occd, J, plot_stats, idx_store] = occd(y, H, t0, var_y, idx_h)
+function [theta_occd, idx_occd, J, plot_stats, idx_store] = occd(y, H, n0, var_y, idx_h)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% This fn is a compact implementation of OLinLASSO only for the purpose of
+% generating statistical experiments for comparison. Users should see 
+% occd_update.m for a single update step.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Dimensions
-T = length(y);
+N = length(y);
 K = length(H(1,:));
 
 % Initial batch start
@@ -20,47 +29,25 @@ correct = [];
 incorrect = [];
 idx_store = {};
 
-for t = 1:T
+for n = 1:N
     % Receive new data point Xn, yn
-    Xn = H(t,:);
-    yn = y(t);
+    Xn = H(n,:);
+    yn = y(n);
 
-    [theta_occd, rn, Rn] = occd_update(yn, Xn, rn, Rn, t, K, theta_occd, all_but_j, var_y);
+    [theta_occd, rn, Rn] = occd_update(yn, Xn, rn, Rn, n, K, theta_occd, all_but_j, var_y);
 
-    if t>t0
-        [J(end+1)] = pred_error_baselines(y, H, t, t0, var_y, theta_occd);
+    if n>n0
+        [J(end+1)] = pred_error_baselines(y, H, n, n0, theta_occd);
         idx_occd = find(theta_occd ~= 0)';
         idx_store{end+1} = idx_occd;
     
         % EVALUATION
-        correct(t-t0) = sum(ismember(idx_occd, idx_h));
-        incorrect(t-t0) = length(idx_occd) - correct(t-t0);
+        correct(n-n0) = sum(ismember(idx_occd, idx_h));
+        incorrect(n-n0) = length(idx_occd) - correct(n-n0);
     end
 
 end
 
-%J = [];
-
-
-% for t = t0+1:T
-% 
-%     % CALL occd
-%     % Receive new data point Xn, yn
-%     Xn = H(t,:);
-%     yn = y(t);
-% 
-%     rn = rn + yn*Xn;
-%     Rn = Rn + Xn'*Xn;
-% 
-%     [theta_occd, rn, Rn] = occd_update(yn, Xn, rn, Rn, t, K, theta_occd, all_but_j, var_y);
-%     [J(end+1)] = pred_error_baselines(y, H, t, t0, var_y, theta_occd);
-%     idx_occd = find(theta_occd ~= 0)';
-% 
-%     % EVALUATION
-%     correct(t-t0) = sum(ismember(idx_occd, idx_h));
-%     incorrect(t-t0) = length(idx_occd) - correct(t-t0);
-% 
-% end
 
 
 % Concatenate results

@@ -1,5 +1,13 @@
 function [M_max, theta_RJ, plot_stats, J] = rj_mcmc(y, H, n, Ns, Nb, idx, var_y, t0)
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% This fn is an implementation of RJMCMC for variable selection based on
+% predictive probability distributions. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 % Get length of data
 N = length(y);
 K = length(H(1,:));

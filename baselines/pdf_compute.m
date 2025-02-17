@@ -1,5 +1,11 @@
 function [ln_dens] = pdf_compute(N, n, p, M, He, H, y, ye)
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% This fn computes the pdf in log scale for RJMCMC implementation
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 valn = 0.5*(n - p);
 valN = 0.5*(N - p);
 
