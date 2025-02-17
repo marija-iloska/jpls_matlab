@@ -15,7 +15,7 @@ addpath(function_paths)
 var_y = 1;            % Observation noise Variance
 ps = 5;                 % Number of 0s in theta
 K = 12;                 % Number of available features
-var_features =  1;      % Range of input data H
+var_features = 1;      % Range of input data H
 var_theta = 1;        % Variance of theta
 T = 200;                 % Number of data points
 p = K - ps;             % True model dimension
@@ -34,8 +34,9 @@ idx_h_padded = [idx_h zeros(1, K - length(idx_h))];
 % OLASSO params
 epsilon = 1e-7;
 
-% Initial batch of datad
+% Initial batch of data
 t0 = K+1;
+k_init = 3;
 
 % rjMCMC params
 n = round(0.2*T);
@@ -47,7 +48,7 @@ Nb = 50;
 
 
 % TPLS =================================================================
-[theta_tpls, idx_tpls, J, plot_stats, idx_tpls_store] = tpls(y, H, K, var_y, t0, idx_h);
+[theta_tpls, idx_tpls, J, plot_stats] = tpls(y, H, k_init, t0, idx_h);
 
 % Results for plotting
 [tpls_correct, tpls_incorrect] = plot_stats{:};
@@ -55,7 +56,7 @@ J_tpls = J;
 
 
 % OlinLASSO =================================================================
-[theta_olin, idx_olin, J, plot_stats, idx_olin_store] = olasso(y, H, t0, epsilon, var_y, idx_h);
+[theta_olin, idx_olin, J, plot_stats, idx_olin_store] = olasso(y, H, t0, epsilon, idx_h);
 
 % Results for plotting
 [olin_correct, olin_incorrect] = plot_stats{:};
@@ -112,6 +113,7 @@ fszl= 10;
 
 % Time range to plot
 time_plot = t0+1:T;
+x_str = 'Arrival of n^{th} data point';
 
 
 % BAR PLOTS SPECIFIC RUN =========================================
@@ -119,17 +121,17 @@ figure('Renderer', 'painters', 'Position', [900 100 1000 900])
 
 % TPLS
 subplot(3,2,1)
-formats = {fsz, fszl, fsz_title, lwdt, c_tpls, c_inc, c_true, 'TPLS', 'Time'};
+formats = {fsz, fszl, fsz_title, lwdt, c_tpls, c_inc, c_true, 'TPLS', x_str};
 bar_plots(tpls_features, t0+1, T, p, K, formats)
 
 % OLinLASSO
 subplot(3,2,2)
-formats = {fsz, fszl, fsz_title, lwdt, c_olin, c_inc, c_true, 'OLinLASSO', 'Time'};
+formats = {fsz, fszl, fsz_title, lwdt, c_olin, c_inc, c_true, 'OLinLASSO', x_str};
 bar_plots(olin_features, t0+1, T, p, K, formats)
 
 % OCCD
 subplot(3,2,3)
-formats = {fsz, fszl, fsz_title, lwdt, c_occd, c_inc, c_true, 'OCCD-TWL', 'Time'};
+formats = {fsz, fszl, fsz_title, lwdt, c_occd, c_inc, c_true, 'OCCD-TWL', x_str};
 bar_plots(occd_features, t0+1, T, p, K, formats)
 
 % RJMCMC
@@ -153,7 +155,7 @@ xlim([t0+1, T])
 set(gca, 'FontSize', 15)
 title('Relative', 'FontSize', fsz_title)
 legend('\Delta J_{OCCD}','\Delta J_{OLin}', '\Delta J_{RJMCMC}', '\Delta J_{TPLS}', 'FontSize', fszl-2)
-xlabel('Time', 'FontSize', fsz)
+xlabel(x_str, 'FontSize', fsz)
 ylabel('Predictive Error Difference', 'FontSize', fsz)
 grid on
 box on
@@ -173,7 +175,7 @@ set(gca, 'FontSize', 15)
 legend('J_{OCCD}','J_{OLin}', 'J_{RJMCMC}', 'J_{TPLS}',  'J_{GENIE}', 'J_{TRUTH}',  'FontSize', fszl-2)
 title('Predictive Error', 'FontSize', fsz_title)
 ylabel('Predictive Error ', 'FontSize', fsz)
-xlabel('Time', 'FontSize', fsz)
+xlabel(x_str, 'FontSize', fsz)
 grid on
 box on
  
@@ -205,7 +207,7 @@ formats = {fsz, lwd, col, 'Removed Feature', '\Delta^{-m}_n', ''};
 expectation_plots(E_rmv(time_plot,:), time_plot, p,  formats)
 
 subplot(4,1,4)
-formats = {fsz, lwd, col, '', '\Sigma \Delta^{-m}_n', 'n'};
+formats = {fsz, lwd, col, '', '\Sigma \Delta^{-m}_n', x_str};
 expectation_plots(cumsum(E_rmv(time_plot,:)), time_plot, p,  formats)
 
 
