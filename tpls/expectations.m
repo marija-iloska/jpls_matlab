@@ -1,63 +1,78 @@
-function [E_add, E_rmv] = expectations(y, H, t0, T, idx1, var_y, theta)
+function [E_add, E_rmv] = expectations(y, H, n0, N, S_true_features, var_y, theta)
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Regret analysis: This fn computes the cumulative differences:
+% predictive MSE (Model above) - predictive MSE (True Model) and
+% predictive MSE (Model below) - predictive MES (True Model) according 
+% to equations (10) and (11) in the reference paper.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Initialize
 K = length(H(1,:));
-idx0 = setdiff(1:K, idx1);
-p = length(idx1);
-pj = K - p;
+S_other_features = setdiff(1:K, S_true_features);
+p = length(S_true_features);
+num_unused_features = K - p;
 
 % Sort H
-H = H(:, [idx1, idx0]);
-theta = theta(idx1);
+H = H(:, [S_true_features, S_other_features]);
 
 % Get true estimates
-Dp = inv(H(1:t0, 1:p)'*H(1:t0, 1:p));
-theta_p = Dp*H(1:t0, 1:p)'*y(1:t0);
+Dp = inv(H(1:n0, 1:p)'*H(1:n0, 1:p));
+theta_p = Dp*H(1:n0, 1:p)'*y(1:n0);
 
 
+% Repetitive term - define
+for m = 1:p
+    % Indexes of all elements except jth
+    all_but_m{m} = setdiff(1:p, m);
+end
 
-for t = t0+1:T
+
+% Start loop
+for n = n0+1:N
+
 
     
     % ADDITION  ===================================================
-    for j = 1:pj
-        % It updates DIM at t-1
-        [~, Dpp, ~,~] = ols_updates(y, H, p, j, t, Dp, theta_p);
+    for m = 1:num_unused_features
+        % It updates DIM at n-1
+        [~, Dpp] = ascendingORLS(y(1:n-1), H(1:n-1, 1:p), H(1:n-1, p+m), n-1, Dp, theta_p);
 
         % D(p+1, t-1)
         b_add = - Dpp(1:end-1,end)/Dpp(end, end);
-        Q_add = H(t, p+j) - H(t, 1:p)*b_add;
+        Q_add = H(n, p+m) - H(n, 1:p)*b_add;
 
         % Expectation E(p+1) - E(p)   single and batch
-        E_add(t,j) = var_y*Q_add^2*Dpp(end,end);
+        E_add(n,m) = var_y*Q_add^2*Dpp(end,end);
 
 
     end
 
     % REMOVAL  ===================================================
-    for j = 1:p
+    for m = 1:p
 
-        idx = setdiff(1:p,j);
+        idx = all_but_m{m};
         
         % Get Dk tilde by swapping 
         Dp_swap = Dp(idx, idx);
-        Dp_swap(p, 1:p-1) = Dp(j, idx);
-        Dp_swap(:, p) = Dp([idx, j], j);
+        Dp_swap(p, 1:p-1) = Dp(m, idx);
+        Dp_swap(:, p) = Dp([idx, m], m);
         
         % D(p, t-1)
         b_rmv = - Dp_swap(1:end-1,end)/Dp_swap(end, end);
-        Q_rmv = H(t,j) - H(t, idx)*b_rmv;
+        Q_rmv = H(n,m) - H(n, idx)*b_rmv;
 
 
         % Expectation E(p-1) - E(p)   single and batch
-        E_rmv(t,j) = Q_rmv^2*(theta(j)^2 - var_y*Dp_swap(end,end));
+        E_rmv(n,m) = Q_rmv^2*(theta(m)^2 - var_y*Dp_swap(end,end));
      
     end
 
 
     % Compute theta_(k+1, t-1), check Dk indices
-    [theta_p, Dp] = time_update(y(t), H(t, 1:p), theta_p, var_y, Dp);
+    [theta_p, Dp] = RLS(y(n), H(n, 1:p), theta_p, Dp);
 
 
 
